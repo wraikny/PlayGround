@@ -1,18 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Altseed
 {
-    public interface IDelayHashSet<T> : IReadOnlyCollection<T>
-    {
-        void Add(T item);
-        void Remove(T item);
-        bool Contains(T item);
-    }
-
     [Serializable]
-    public class DelayHashSet<T> : IDelayHashSet<T>
+    internal class DelayList<T> : IReadOnlyCollection<T>
     {
         [Serializable]
         private enum Waiting
@@ -21,15 +15,16 @@ namespace Altseed
             Remove,
         }
 
-        private readonly HashSet<T> objects = new HashSet<T>();
+        private readonly List<T> objects = new List<T>();
         private readonly Dictionary<T, Waiting> waitings = new Dictionary<T, Waiting>();
 
-        public DelayHashSet() { }
+        public DelayList() { }
 
         public void Add(T item) => waitings[item] = Waiting.Add;
         public void Remove(T item) => waitings[item] = Waiting.Remove;
         public bool Contains(T item) => objects.Contains(item);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update()
         {
             foreach(var x in waitings)
@@ -37,7 +32,10 @@ namespace Altseed
                 switch(x.Value)
                 {
                     case Waiting.Add:
-                        objects.Add(x.Key);
+                        if(!objects.Contains(x.Key))
+                        {
+                            objects.Add(x.Key);
+                        }
                         break;
                     case Waiting.Remove:
                         objects.Remove(x.Key);

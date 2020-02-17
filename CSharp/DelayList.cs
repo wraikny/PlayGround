@@ -8,15 +8,12 @@ namespace Altseed
     [Serializable]
     internal class DelayList<T> : IReadOnlyCollection<T>
     {
-        [Serializable]
-        private enum Waiting : byte
-        {
-            Add,
-            Remove,
-        }
-
         private readonly List<T> objects;
-        private readonly Dictionary<T, Waiting> waitings = new Dictionary<T, Waiting>();
+        private readonly List<T> waitingAdded = new List<T>();
+        private readonly List<T> waitingRemoved = new List<T>();
+
+        public event Action<T> OnAdded = delegate { };
+        public event Action<T> OnRemoved = delegate { };
 
         public DelayList()
         {
@@ -33,29 +30,27 @@ namespace Altseed
             objects = new List<T>(collection);
         }
 
-        public void Add(T item) => waitings[item] = Waiting.Add;
-        public void Remove(T item) => waitings[item] = Waiting.Remove;
+        public void Add(T item) => waitingAdded.Add(item);
+        public void Remove(T item) => waitingRemoved.Add(item);
         public bool Contains(T item) => objects.Contains(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update()
         {
-            foreach(var x in waitings)
+            foreach(var x in waitingAdded)
             {
-                switch(x.Value)
-                {
-                    case Waiting.Add:
-                        objects.Add(x.Key);
-                        break;
-                    case Waiting.Remove:
-                        objects.Remove(x.Key);
-                        break;
-                    default:
-                        break;
-                };
+                objects.Add(x);
+                OnAdded(x);
             }
 
-            waitings.Clear();
+            foreach(var x in waitingRemoved)
+            {
+                _ = objects.Remove(x);
+                OnRemoved(x);
+            }
+
+            waitingAdded.Clear();
+            waitingRemoved.Clear();
         }
 
         public int Count => objects.Count;

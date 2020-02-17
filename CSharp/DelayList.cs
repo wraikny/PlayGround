@@ -9,7 +9,7 @@ namespace Altseed
     internal class DelayList<T> : IReadOnlyCollection<T>
     {
         [Serializable]
-        private enum Waiting
+        private enum Waiting : byte
         {
             Add,
             Remove,
@@ -45,10 +45,7 @@ namespace Altseed
                 switch(x.Value)
                 {
                     case Waiting.Add:
-                        if(!objects.Contains(x.Key))
-                        {
-                            objects.Add(x.Key);
-                        }
+                        objects.Add(x.Key);
                         break;
                     case Waiting.Remove:
                         objects.Remove(x.Key);
